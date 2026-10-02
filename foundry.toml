@@ -1,0 +1,48 @@
+# Foundry configuration for every Solidity contract in the protocol.
+#
+# `src` is the whole `contracts` tree, which spans three chains:
+#   contracts/base/         — Base L2: escrow, stake, verdict inbox
+#   contracts/genlayer-evm/ — GenLayer Chain's EVM side: the verdict emitter
+#   contracts/l1/           — Ethereum: the canonical-backstop forwarder
+#
+# They never share an address space, but they do share the verdict grammar, and
+# compiling them together is what keeps that grammar from drifting apart.
+# `contracts/genlayer/` holds the Python Intelligent Contract; Foundry globs
+# only `.sol`, so it is excluded by construction — as is `tests/direct/`, the
+# GenLayer direct-mode suite, which runs under pytest instead.
+
+[profile.default]
+src = "contracts"
+test = "tests"
+out = "out"
+libs = ["lib"]
+solc = "0.8.26"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+bytecode_hash = "none"
+
+# Escrow and stake accounting must never silently truncate.
+[profile.default.fuzz]
+runs = 512
+
+[profile.default.invariant]
+runs = 256
+depth = 64
+fail_on_revert = false
+
+# Deep run for pre-audit sweeps: `FOUNDRY_PROFILE=deep forge test`
+[profile.deep.fuzz]
+runs = 20000
+
+[profile.deep.invariant]
+runs = 2000
+depth = 256
+fail_on_revert = false
+
+[lint]
+# Every window in this protocol is measured in hours to weeks: the acceptance
+# window, the challenge window, the cure window, the 21-day unbonding delay.
+# A sequencer nudging `block.timestamp` by a few seconds cannot reach any of
+# them, so the warning is noise that would hide a real finding later.
+exclude_lints = ["block-timestamp"]

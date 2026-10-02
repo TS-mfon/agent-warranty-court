@@ -1,0 +1,25 @@
+{
+  "chainId": 61999,
+  "name": "GenLayer Studio Network",
+  "rpcUrl": "https://studio.genlayer.com/api",
+  "deployer": "0xEd9EDd8586b20524CafA4F568413C504C9B03172",
+  "contracts": {
+    "AgentWarrantyCourt": "0x645f7F35CF0Efde19B56fa0f87BC06b814B14461"
+  },
+  "txHashes": {
+    "AgentWarrantyCourt": "0xd38f9edf4c5095f20dadfe979d9a569a8ddd9722d96db78389bad65ce36cbc79"
+  },
+  "artifact": {
+    "source": "contracts/genlayer/warranty_court.py",
+    "deployed": "build/warranty_court.min.py",
+    "sha256": "fa0db813a6306f1c747c73e3fcabaf396fd156f0da63a354a292d8805db374af",
+    "note": "Comment- and docstring-stripped build, proven AST-equivalent to the documented source by script/build_genlayer.py. Deployed because the 34KB documented source estimates at 27.3M gas."
+  },
+  "consensus": {
+    "status": "FINALIZED",
+    "result": "MAJORITY_AGREE",
+    "rounds": 1,
+    "votesRevealed": 5
+  },
+  "notes": "Deployed to studionet, NOT Bradbury. Bradbury refuses the deploy: the stripped artifact estimates at 21.65M gas and the node's per-transaction ceiling sits between 10M (accepted, reverts out-of-gas) and 19M (refused as too high). The court's immutable verdict_emitter points at 0x6414F02bB750a11442517c09322b43Bc8fb92Cb6, which is unoccupied: Studio implements no ghost contracts and its EVM RPC rejects forge's transaction shape, so VerdictEmitter cannot be co-located with its court. The EVM emit path is therefore inert here; the optimistic path does not use it, since the keeper reads the verdict() view over RPC."
+}

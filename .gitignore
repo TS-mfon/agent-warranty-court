@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+lib/
+
+# Foundry build output
+out/
+cache/
+broadcast/
+
+# Foundry writes "sensitive values" (RPC URLs, and potentially key material)
+# into cache/ and per-run files under broadcast/. Both are ignored above rather
+# than filtered, because the safe default for a directory a tool writes secrets
+# into is to never track it at all.
+
+# Secrets. The deploy key lives outside this repository on purpose, in
+# ~/.env.build, so there is no in-repo path that could ever hold it.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# GenLayer / Python
+__pycache__/
+*.pyc
+.pytest_cache/
+artifacts/
+build/
+
+# unlazy gate ledgers and approvals are local working state
+.unlazy/
+.unlazy-hook-state.json
+.claude/settings.local.json
+
+# Editors and OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Vercel
+.vercel/
+.next/

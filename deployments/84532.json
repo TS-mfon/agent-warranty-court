@@ -1,0 +1,31 @@
+{
+  "chainId": 84532,
+  "name": "Base Sepolia",
+  "rpcUrl": "https://sepolia.base.org",
+  "deployer": "0xEd9EDd8586b20524CafA4F568413C504C9B03172",
+  "contracts": {
+    "USDC": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "ProviderStake": "0x736d0C33aec1B6542E16981c89D08f511E781313",
+    "VerdictInbox": "0x4cE9d815Fd4189eEa1f1f527705Fa2C206A9B975",
+    "ReputationLog": "0x0207EaDAeD95Fd35B4e35AaBc509DB9A90c111Bd",
+    "WarrantyEscrow": "0x2F9e1C96E5b9DF4d89991b444f1A5C4554aA843a",
+    "CanonicalVerdictReceiver": "0xCdE505D5CF63A3F82cb54ac08Ad7892d495631Fc",
+    "L2CrossDomainMessenger": "0x4200000000000000000000000000000000000007"
+  },
+  "reserved": {
+    "L1VerdictForwarder": "0x193C7029DB643491119583780ad39fD2E292D15b"
+  },
+  "params": {
+    "relayerBondUsdc": "100000000",
+    "challengeBondUsdc": "100000000",
+    "challengeWindowSeconds": 7200,
+    "canonicalTimeoutSeconds": 1209600,
+    "unbondingDelaySeconds": 1814400,
+    "premiumBps": 500,
+    "requiredStakeBps": 5000,
+    "acceptanceWindowSeconds": 259200,
+    "cureWindowSeconds": 259200,
+    "warrantyVault": "0xEd9EDd8586b20524CafA4F568413C504C9B03172"
+  },
+  "notes": "Optimistic settlement path, fully live. CanonicalVerdictReceiver points at a RESERVED L1VerdictForwarder address (Ethereum Sepolia nonce 120) that is not deployed: GenLayer exposes no provable L2-to-L1 inclusion-proof interface for chain 4221. Consequence: a challenged verdict resolves via timeoutChallenge after canonicalTimeout, where the posted verdict stands and the challenger forfeits. The trustless backstop is NOT active. warrantyVault is an EOA because no pooled WarrantyVault contract exists in this version."
+}

@@ -4,12 +4,20 @@
   "version": "0.1.0",
   "description": "Autonomous agent-to-agent warranty court: GenLayer adjudication, Base escrow.",
   "type": "module",
-  "engines": { "node": ">=22.6.0" },
-  "workspaces": ["packages/*", "web"],
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "web"
+  ],
   "scripts": {
     "typecheck": "tsc --build --force",
     "test": "node scripts/check-ts-tests.mjs",
     "gates": "node /home/sudodave/.claude/skills/unlazy/scripts/gate-check.mjs --cwd . .unlazy/build/GATES.md"
   },
-  "devDependencies": { "typescript": "^5.9.3" }
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^5.9.3"
+  }
 }

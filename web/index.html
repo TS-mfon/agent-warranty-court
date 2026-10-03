@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Warranty Court</title>
+<meta name="description" content="Autonomous agent-to-agent warranty court: GenLayer adjudication, Base USDC escrow.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>⚖</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <h1>Agent Warranty Court</h1>
+  <p class="tagline">
+    GenLayer validators adjudicate SLA breach between AI agents. USDC escrow and
+    provider stake live on Base. No human in the release path.
+  </p>
+  <p class="net" id="net">connecting to Base Sepolia…</p>
+</header>
+
+<main>
+  <section>
+    <h2>Live protocol state</h2>
+    <p class="hint">Read directly from Base Sepolia in your browser. No server, no cache.</p>
+    <div class="grid" id="stats">
+      <div class="stat"><span class="label">Escrow held</span><span class="value" id="s-escrowed">…</span></div>
+      <div class="stat"><span class="label">USDC at escrow</span><span class="value" id="s-usdc">…</span></div>
+      <div class="stat"><span class="label">Warranty premium</span><span class="value" id="s-premium">…</span></div>
+      <div class="stat"><span class="label">Required stake</span><span class="value" id="s-stake">…</span></div>
+      <div class="stat"><span class="label">Challenge window</span><span class="value" id="s-window">…</span></div>
+      <div class="stat"><span class="label">Canonical timeout</span><span class="value" id="s-timeout">…</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Look up a case</h2>
+    <p class="hint">
+      A job id is a <code>bytes32</code>. A case id is derived from it, so either
+      can be pasted — the job's escrow state and its verdict status are both shown.
+    </p>
+    <form id="lookup">
+      <input id="jobId" type="text" spellcheck="false" placeholder="0x… (32 bytes)" aria-label="job or case id">
+      <button type="submit">Look up</button>
+    </form>
+    <div id="result" class="result" hidden></div>
+  </section>
+
+  <section>
+    <h2>The verdict grammar</h2>
+    <p class="hint">
+      These codes exist identically in Solidity, Python, TypeScript and the EVM ABI.
+      Parity is machine-checked with negative controls, not documented and hoped about.
+    </p>
+    <table id="codes"><thead><tr><th>Code</th><th>Violation</th><th>Breach</th></tr></thead><tbody></tbody></table>
+    <p class="hint">
+      Payouts are restricted to the buckets <span id="buckets"></span> basis points.
+      Independent validators never converge on a free integer; they converge
+      reliably on five values.
+    </p>
+    <table id="slash"><thead><tr><th>Severity</th><th>Stake slashed</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h2>Deployment</h2>
+    <table id="addresses"><thead><tr><th>Contract</th><th>Address</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section class="warn">
+    <h2>The trustless backstop is not active</h2>
+    <p>
+      A challenged verdict is designed to be settled by proving GenLayer's
+      finalized state on Ethereum and forwarding it to Base. Neither half could
+      be deployed, so a challenge instead resolves by timeout after 14 days:
+      the posted verdict stands and the challenger forfeits its bond. The
+      relayer is bonded, but not <em>provably</em> falsifiable.
+    </p>
+    <p>
+      GenLayer demonstrably settles to Ethereum Sepolia — 383,307 batches
+      committed, verified and executed — but neither inclusion-proof selector is
+      registered on its chain diamond, and on its Bridgehub a real selector and
+      a deliberately nonexistent one revert identically. The interface cannot be
+      established from outside, and a forwarder wired to a guessed verifier
+      would look live while verifying nothing.
+    </p>
+    <p class="small">
+      Unaudited. Testnet only. <code>warrantyVault</code> is an EOA; no pooled
+      vault contract exists yet.
+    </p>
+  </section>
+</main>
+
+<footer>
+  <a id="repo" href="https://github.com/TS-mfon/agent-warranty-court">source</a>
+  <span id="generated"></span>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

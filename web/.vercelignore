@@ -1,7 +1,9 @@
-# The build runs locally: it needs Foundry's `cast` and the parent workspace,
-# neither of which exists in a Vercel container. generated/data.js is committed
-# and `scripts/check-web-build.mjs` proves it is not stale.
-build.mjs
+# Hidden from Vercel so it sees a plain static directory and zero-configs it.
+# With package.json present, Vercel detects the `build` script and runs it — but
+# build.mjs needs Foundry's `cast` and the parent workspace, neither of which
+# exists in a build container. generated/data.js is committed instead, and
+# scripts/check-web-build.mjs proves it is not stale.
 package.json
+build.mjs
 test/
 node_modules/

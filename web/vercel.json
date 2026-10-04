@@ -1,9 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": ".",
   "cleanUrls": true,
-  "installCommand": "echo 'no runtime dependencies'",
-  "buildCommand": "echo 'prebuilt: generated/data.js is committed'",
   "headers": [
     {
       "source": "/(.*)",

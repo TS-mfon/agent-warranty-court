@@ -76,7 +76,9 @@ const PUBLIC_CONSTANTS = new Set([
 function isKnownSafeHex(match, file) {
   if (PUBLIC_CONSTANTS.has(match.toLowerCase())) return true;
   if (isTemplate(match, file)) return true;
-  if (/deployments\/.*\.json$|\.md$/.test(file)) return true; // published hashes
+  // Published, public facts: transaction hashes in manifests, in documentation,
+  // and in the generated web data that copies them out of the manifests.
+  if (/deployments\/.*\.json$|\.md$|web\/generated\//.test(file)) return true;
   const distinct = new Set(match.slice(2).toLowerCase()).size;
   return distinct <= 6;
 }
@@ -156,14 +158,37 @@ problems.push(...scanTracked().map((h) => `${h.file}: ${h.name} (${h.sample})`))
 
 // 4. Scan the whole history, because a key removed from the tip is still served
 //    from the commit that introduced it.
+//
+//    Enumerated blob-by-blob WITH its path, not via `git log -p`. The diff-text
+//    approach lost file context, so `.env.example`'s deliberate placeholder and
+//    ordinary English prose in test files both registered as findings — and a
+//    gate that cries wolf is a gate someone switches off. Path-aware scanning
+//    keeps the same allowances that apply to the working tree.
 let historyBlobs = 0;
 try {
-  const revs = git(['rev-list', '--all']).split('\n').filter(Boolean);
-  if (revs.length > 0) {
-    const all = git(['log', '--all', '-p', '--no-color', '--unified=0']);
-    historyBlobs = revs.length;
-    for (const h of scanText(all, '<history>')) {
-      problems.push(`git history: ${h.name} (${h.sample})`);
+  const objects = git(['rev-list', '--objects', '--all'])
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      const space = line.indexOf(' ');
+      return space === -1 ? null : { sha: line.slice(0, space), path: line.slice(space + 1) };
+    })
+    .filter((o) => o && o.path);
+
+  for (const { sha, path } of objects) {
+    let text;
+    try {
+      const buf = execFileSync('git', ['cat-file', 'blob', sha], {
+        cwd: ROOT, maxBuffer: 16 * 1024 * 1024,
+      });
+      if (buf.includes(0)) continue; // binary
+      text = buf.toString('utf8');
+    } catch {
+      continue;
+    }
+    historyBlobs += 1;
+    for (const h of scanText(text, path)) {
+      problems.push(`history ${path}@${sha.slice(0, 8)}: ${h.name} (${h.sample})`);
     }
   }
 } catch (e) {
@@ -217,7 +242,7 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `scanned ${tracked.length} tracked files and ${historyBlobs} commits; ` +
+  `scanned ${tracked.length} tracked files and ${historyBlobs} history blobs; ` +
     `deploy key cross-check ${keyChecked ? 'performed' : 'skipped (no ~/.env.build)'}; ` +
     'positive control detected both planted secrets',
 );

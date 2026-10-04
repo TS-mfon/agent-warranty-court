@@ -7,3 +7,4 @@ package.json
 build.mjs
 test/
 node_modules/
+.vercel/

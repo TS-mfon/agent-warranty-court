@@ -90,7 +90,6 @@ export const VERDICT_STATUSES = ${JSON.stringify(VERDICT_STATUSES)};
 export const VERDICT_CODES = ${JSON.stringify(codes, null, 2)};
 export const PAYOUT_BUCKETS = ${JSON.stringify([...grammar.PAYOUT_BUCKETS])};
 export const SLASH_BY_SEVERITY = ${JSON.stringify([1, 2, 3].map((s) => ({ severity: s, bps: grammar.slashBpsFor(s) })))};
-export const GENERATED_AT = ${JSON.stringify(new Date().toISOString())};
 `;
 
 // Declarations are emitted alongside the data so consumers get real types
@@ -122,7 +121,6 @@ export declare const VERDICT_STATUSES: readonly string[];
 export declare const VERDICT_CODES: readonly VerdictCode[];
 export declare const PAYOUT_BUCKETS: readonly number[];
 export declare const SLASH_BY_SEVERITY: readonly { severity: number; bps: number }[];
-export declare const GENERATED_AT: string;
 `;
 
 // ---------------------------------------------------------------------------

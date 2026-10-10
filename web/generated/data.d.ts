@@ -24,4 +24,3 @@ export declare const VERDICT_STATUSES: readonly string[];
 export declare const VERDICT_CODES: readonly VerdictCode[];
 export declare const PAYOUT_BUCKETS: readonly number[];
 export declare const SLASH_BY_SEVERITY: readonly { severity: number; bps: number }[];
-export declare const GENERATED_AT: string;

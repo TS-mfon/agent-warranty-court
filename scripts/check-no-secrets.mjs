@@ -71,6 +71,13 @@ function isTemplate(match, file) {
 const PUBLIC_CONSTANTS = new Set([
   '0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141', // secp256k1 n
   '0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0', // secp256k1 n / 2
+  // Hardhat/Anvil's published account #1. A genuine high-entropy key, so no
+  // entropy rule can excuse it, and it is used to sign EIP-3009 fixtures in the
+  // x402 tests. Listed by exact value rather than by file, so a *different* key
+  // appearing in a test is still a finding. Anything signed with this key is
+  // spendable by anyone, which is exactly why it is safe to commit and unsafe
+  // to ever fund.
+  '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
 ]);
 
 function isKnownSafeHex(match, file) {

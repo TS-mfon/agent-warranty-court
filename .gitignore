@@ -41,3 +41,6 @@ build/
 # Vercel
 .vercel/
 .next/
+
+# MCP server deps are installed separately from the root workspace
+integrations/mcp/node_modules/

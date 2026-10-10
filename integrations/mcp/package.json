@@ -1,0 +1,10 @@
+{
+  "name": "@awc/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server exposing the Agent Warranty Court protocol to an agent.",
+  "bin": { "awc-mcp": "./src/server.mjs" },
+  "scripts": { "start": "node src/server.mjs" },
+  "dependencies": { "@modelcontextprotocol/sdk": "^1.0.0" }
+}

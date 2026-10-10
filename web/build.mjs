@@ -11,7 +11,7 @@
  * Output: web/generated/data.js, a plain ES module the browser imports.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -125,8 +125,155 @@ export declare const SLASH_BY_SEVERITY: readonly { severity: number; bps: number
 export declare const GENERATED_AT: string;
 `;
 
+// ---------------------------------------------------------------------------
+// Documentation bundle for the /docs page.
+//
+// Rendered from the canonical markdown in docs/ so the site cannot paraphrase
+// the real documentation and drift away from it. The converter below is
+// deliberately small: it handles the constructs these documents actually use
+// and escapes everything else. It is not a general Markdown implementation and
+// should not be pressed into service as one.
+// ---------------------------------------------------------------------------
+
+const DOC_ORDER = [
+  ['protocol', 'Protocol lifecycle and economics'],
+  ['contracts', 'Contract reference'],
+  ['verdict-grammar', 'Verdict grammar'],
+  ['adjudication', 'How GenLayer decides'],
+  ['integration', 'Integration guide'],
+  ['security', 'Threat model'],
+];
+
+const escapeHtml = (text) =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** Inline spans: code, bold, italic, links. Code is extracted first so its
+ *  contents are never re-interpreted as emphasis. */
+function inline(text) {
+  const codes = [];
+  let out = text.replace(/`([^`]+)`/g, (_, code) => {
+    codes.push(code);
+    return `\u0000${codes.length - 1}\u0000`;
+  });
+  out = escapeHtml(out);
+  out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
+  // Links: repo-relative targets become GitHub links, anchors stay local.
+  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
+    if (/^https?:/.test(href)) return `<a href="${href}" rel="noreferrer">${label}</a>`;
+    if (href.startsWith('#')) return `<a href="${href}">${label}</a>`;
+    const clean = href.replace(/^\.\.\//, '').replace(/^\.\//, '');
+    const anchor = clean.includes('#') ? clean.slice(clean.indexOf('#')) : '';
+    const file = anchor ? clean.slice(0, clean.indexOf('#')) : clean;
+    const repo = 'https://github.com/TS-mfon/agent-warranty-court/blob/main';
+    const target = file.startsWith('docs/') || file.endsWith('.md')
+      ? `${repo}/${file.startsWith('docs/') ? file : `docs/${file}`}${anchor}`
+      : `${repo}/${file}${anchor}`;
+    return `<a href="${target}" rel="noreferrer">${label}</a>`;
+  });
+  return out.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${escapeHtml(codes[Number(i)])}</code>`);
+}
+
+function markdownToHtml(md) {
+  const lines = md.split('\n');
+  const out = [];
+  let i = 0;
+
+  const closeList = (tag) => { if (tag) out.push(`</${tag}>`); };
+  let listTag = null;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.startsWith('```')) {
+      closeList(listTag); listTag = null;
+      const body = [];
+      i += 1;
+      while (i < lines.length && !lines[i].startsWith('```')) { body.push(lines[i]); i += 1; }
+      i += 1;
+      out.push(`<pre><code>${escapeHtml(body.join('\n'))}</code></pre>`);
+      continue;
+    }
+
+    // Tables: a header row followed by a separator row of dashes.
+    if (line.startsWith('|') && (lines[i + 1] ?? '').match(/^\|[\s:|-]+\|$/)) {
+      closeList(listTag); listTag = null;
+      const cells = (row) => row.split('|').slice(1, -1).map((c) => c.trim());
+      const head = cells(line);
+      i += 2;
+      const body = [];
+      while (i < lines.length && lines[i].startsWith('|')) { body.push(cells(lines[i])); i += 1; }
+      out.push('<table><thead><tr>' + head.map((c) => `<th>${inline(c)}</th>`).join('') + '</tr></thead><tbody>');
+      for (const row of body) out.push('<tr>' + row.map((c) => `<td>${inline(c)}</td>`).join('') + '</tr>');
+      out.push('</tbody></table>');
+      continue;
+    }
+
+    const heading = line.match(/^(#{1,4})\s+(.*)$/);
+    if (heading) {
+      closeList(listTag); listTag = null;
+      // Shift down one level: the page already owns an h1 and an h2 per doc.
+      const level = Math.min(6, heading[1].length + 2);
+      const text = heading[2];
+      out.push(`<h${level} id="${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}">${inline(text)}</h${level}>`);
+      i += 1;
+      continue;
+    }
+
+    const bullet = line.match(/^[-*]\s+(.*)$/);
+    const numbered = line.match(/^\d+\.\s+(.*)$/);
+    if (bullet || numbered) {
+      const wanted = bullet ? 'ul' : 'ol';
+      if (listTag !== wanted) { closeList(listTag); out.push(`<${wanted}>`); listTag = wanted; }
+      out.push(`<li>${inline((bullet ?? numbered)[1])}</li>`);
+      i += 1;
+      continue;
+    }
+
+    if (line.startsWith('> ')) {
+      closeList(listTag); listTag = null;
+      out.push(`<blockquote>${inline(line.slice(2))}</blockquote>`);
+      i += 1;
+      continue;
+    }
+
+    if (line.trim() === '') { closeList(listTag); listTag = null; i += 1; continue; }
+
+    closeList(listTag); listTag = null;
+    const para = [line];
+    i += 1;
+    while (i < lines.length && lines[i].trim() !== '' && !/^([-*#>|]|\d+\.|```)/.test(lines[i])) {
+      para.push(lines[i]); i += 1;
+    }
+    out.push(`<p>${inline(para.join(' '))}</p>`);
+  }
+  closeList(listTag);
+  return out.join('\n');
+}
+
+// Created before anything is written: on a fresh checkout `generated/` does
+// not exist, and the docs bundle was being written before the mkdir that
+// creates it. It only worked because the directory already existed locally.
 mkdirSync(join(HERE, 'generated'), { recursive: true });
+
+const docs = [];
+for (const [slug, title] of DOC_ORDER) {
+  const path = join(ROOT, 'docs', `${slug}.md`);
+  if (!existsSync(path)) {
+    throw new Error(`docs/${slug}.md is missing; the /docs page would silently lose a section`);
+  }
+  const md = readFileSync(path, 'utf8');
+  // Drop the document's own h1: the page supplies the section heading.
+  const withoutTitle = md.replace(/^#\s+.*\n/, '');
+  docs.push({ slug, title, html: markdownToHtml(withoutTitle) });
+}
+
+writeFileSync(
+  join(HERE, 'generated/docs.js'),
+  `// GENERATED by web/build.mjs from docs/*.md — do not edit.\nexport const DOCS = ${JSON.stringify(docs, null, 1)};\n`,
+);
+
 writeFileSync(join(HERE, 'generated/data.js'), out);
 writeFileSync(join(HERE, 'generated/data.d.ts'), dts);
-console.log(`generated ${Object.keys(selectors).length} selectors, ${codes.length} verdict codes`);
+console.log(`generated ${Object.keys(selectors).length} selectors, ${codes.length} verdict codes, ${docs.length} doc pages`);
 console.log('web data generated');

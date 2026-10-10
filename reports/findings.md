@@ -59,6 +59,10 @@ and the exact fundJob arguments".
 402 body carried the requirements array in its `error` field, so a paying client
 would have received an unintelligible failure instead of a payment challenge.
 
+**How it was found.** Two x402 tests failed after F2 was fixed — the challenge
+assertions. The diff showed the requirements object where a string was expected,
+which pointed straight at the argument order.
+
 **Guard.** `packages/x402/test/x402.test.ts` → "an unpaid request gets a 402
 carrying everything needed to pay".
 
@@ -79,8 +83,15 @@ deliberately nonexistent concern, which passed.
 **Fix.** It now invokes `node --test` directly, parses individual test names out
 of the TAP stream, and treats "no test name contains this concern" as failure.
 
-**Guard.** `node scripts/check-suite.mjs --package @awc/x402 --concern <absent>`
-exits 1. Verified.
+**Guard.** `scripts/check-suite.mjs` now fails on absent coverage. Verified
+directly: `node scripts/check-suite.mjs --package @awc/x402 --concern premium`
+reports "3 of 24 tests cover" and exits 0, while the same command with a concern
+no test covers exits 1 with "none of them cover this concern".
+
+**Lesson.** This is why every absence check in `scripts/` carries a control that
+feeds it known-bad input. The bug was not in the matching logic, it was in the
+assumption that the filter was being applied at all — and only running the
+oracle against something it must reject could reveal that.
 
 ## F5 — Vercel served 404 while reporting 200
 

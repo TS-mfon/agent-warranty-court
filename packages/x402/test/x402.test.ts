@@ -75,12 +75,15 @@ async function signedPayment(
     ? privateKeyToAccount(('0x' + '42'.repeat(32)) as Hex)
     : payer;
 
+  // `signTypedData` is generic over the types object, and casting each field to
+  // `never` individually collapses the whole parameter to `never`. Casting the
+  // argument once keeps the call checkable at its boundary instead.
   const sig = await signer.signTypedData({
-    domain: usdcDomain(context.chainId) as never,
-    types: TRANSFER_WITH_AUTHORIZATION_TYPES as never,
-    primaryType: TRANSFER_WITH_AUTHORIZATION_PRIMARY_TYPE as never,
-    message: authorization as never,
-  });
+    domain: usdcDomain(context.chainId),
+    types: TRANSFER_WITH_AUTHORIZATION_TYPES,
+    primaryType: TRANSFER_WITH_AUTHORIZATION_PRIMARY_TYPE,
+    message: authorization,
+  } as Parameters<typeof signer.signTypedData>[0]);
 
   const r = ('0x' + sig.slice(2, 66)) as Hex;
   let s = ('0x' + sig.slice(66, 130)) as Hex;

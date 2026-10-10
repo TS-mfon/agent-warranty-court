@@ -73,13 +73,31 @@ test('every selector the app uses is actually generated', () => {
   }
 });
 
-test('job and verdict state names cover the on-chain enums', () => {
-  // Mirrors WarrantyEscrow.State and VerdictInbox.Status. If a state were added
-  // on chain without being added here, a real job would render as "unknown".
-  assert.deepEqual(data.JOB_STATES, [
-    'None', 'Funded', 'Delivered', 'Released', 'Disputed', 'Settled', 'Refunded', 'Curing',
-  ]);
-  assert.deepEqual(data.VERDICT_STATUSES, ['None', 'Posted', 'Challenged', 'Final']);
+/** Read an enum's members straight out of the Solidity. */
+function solidityEnum(file: string, name: string): string[] {
+  const source = readFileSync(join(ROOT, file), 'utf8');
+  const block = source.match(new RegExp(`enum\\s+${name}\\s*\\{([^}]*)\\}`));
+  assert.ok(block, `enum ${name} not found in ${file}`);
+  return block![1].split(',').map((l) => l.replace(/\/\/.*$/gm, '').trim()).filter(Boolean);
+}
+
+test('state names are the contract enums, in the contract order', () => {
+  // This test previously asserted a hand-written list, and that list was wrong:
+  // Released and Disputed were transposed and a nonexistent Curing was added,
+  // so the inspector mislabelled every disputed and every released job. The
+  // test agreed with the bug because both were written from the same bad memory.
+  //
+  // It now compares against the Solidity, so the only way to pass is to match
+  // the contract.
+  assert.deepEqual(data.JOB_STATES, solidityEnum('contracts/base/WarrantyEscrow.sol', 'State'));
+  assert.deepEqual(data.VERDICT_STATUSES, solidityEnum('contracts/base/VerdictInbox.sol', 'Status'));
+
+  // Guard the ordering explicitly too: a deepEqual against a parse that silently
+  // returned [] would otherwise pass against an empty generated list.
+  assert.ok(data.JOB_STATES.length >= 7, 'too few job states parsed');
+  assert.equal(data.JOB_STATES[0], 'None');
+  assert.equal(data.JOB_STATES[3], 'Disputed');
+  assert.equal(data.JOB_STATES[4], 'Released');
 });
 
 test('the landing page states the backstop limitation rather than hiding it', () => {

@@ -41,10 +41,37 @@ for (const sig of SIGNATURES) {
 const base = JSON.parse(readFileSync(join(ROOT, 'deployments/84532.json'), 'utf8'));
 const genlayer = JSON.parse(readFileSync(join(ROOT, 'deployments/61999.json'), 'utf8'));
 
-/** Job states, in the order `WarrantyEscrow.State` declares them. */
-const JOB_STATES = ['None', 'Funded', 'Delivered', 'Released', 'Disputed', 'Settled', 'Refunded', 'Curing'];
-/** Verdict statuses, in the order `VerdictInbox.Status` declares them. */
-const VERDICT_STATUSES = ['None', 'Posted', 'Challenged', 'Final'];
+/**
+ * Enum member names, parsed out of the Solidity rather than transcribed.
+ *
+ * These were hand-written once and were wrong: `Released` and `Disputed` were
+ * transposed and a nonexistent `Curing` was appended, so the inspector labelled
+ * every disputed job "Released" and every released job "Disputed". Nothing
+ * failed — an enum index is just a number, and a plausible wrong name reads
+ * exactly like a right one.
+ *
+ * Parsing removes the opportunity. If a state is added, reordered or renamed in
+ * the contract, the site follows on the next build instead of lying.
+ */
+function solidityEnum(file, name) {
+  const source = readFileSync(join(ROOT, file), 'utf8');
+  const block = source.match(new RegExp(`enum\\s+${name}\\s*\\{([^}]*)\\}`));
+  if (!block) throw new Error(`enum ${name} not found in ${file}`);
+  const members = block[1]
+    .split(',')
+    .map((line) => line.replace(/\/\/.*$/gm, '').trim())
+    .filter(Boolean);
+  if (members.length === 0) throw new Error(`enum ${name} in ${file} has no members`);
+  for (const m of members) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(m)) {
+      throw new Error(`enum ${name} member ${JSON.stringify(m)} did not parse cleanly`);
+    }
+  }
+  return members;
+}
+
+const JOB_STATES = solidityEnum('contracts/base/WarrantyEscrow.sol', 'State');
+const VERDICT_STATUSES = solidityEnum('contracts/base/VerdictInbox.sol', 'Status');
 
 const codes = grammar.VIOLATION_CODE_NAMES.map((name, code) => ({
   code,

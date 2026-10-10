@@ -7,14 +7,33 @@ import * as grammar from '../../packages/shared/src/verdict.ts';
 import * as data from '../generated/data.js';
 
 const ROOT = join(import.meta.dirname, '..', '..');
-const APP = readFileSync(join(ROOT, 'web/app.js'), 'utf8');
-const HTML = readFileSync(join(ROOT, 'web/index.html'), 'utf8');
+/**
+ * Every page, and every module the pages load.
+ *
+ * The single-page `app.js` was retired when the site became five pages; its
+ * chain-reading logic now lives in `chain.js` with per-page callers. The
+ * assertions below apply to all of them, because "no page hardcodes an address"
+ * is only a real property if it holds for the page that was added last.
+ */
+const PAGES = ['index.html', 'monitor.html', 'how-it-works.html', 'inspect.html', 'docs.html'];
+const SCRIPTS = ['chrome.js', 'chain.js', 'monitor.js', 'inspect.js', 'docs.js'];
 
-test('the app hardcodes no contract address', () => {
-  // The whole point of generated/data.js. A literal here is a stale address
-  // waiting to show confident numbers for a dead deployment.
-  assert.equal(APP.match(/0x[0-9a-fA-F]{40}\b/g), null);
-  assert.equal(HTML.match(/0x[0-9a-fA-F]{40}\b/g), null);
+const read = (rel: string) => readFileSync(join(ROOT, 'web', rel), 'utf8');
+const APP = SCRIPTS.map(read).join('\n');
+const HTML = PAGES.map(read).join('\n');
+
+test('no page or module hardcodes a contract address', () => {
+  // The whole point of generated/data.js. A literal anywhere here is a stale
+  // address waiting to show confident numbers for a dead deployment.
+  for (const rel of [...PAGES, ...SCRIPTS]) {
+    assert.equal(read(rel).match(/0x[0-9a-fA-F]{40}\b/g), null, `${rel} hardcodes an address`);
+  }
+});
+
+test('every page loads the shared chrome so navigation cannot diverge', () => {
+  for (const rel of PAGES) {
+    assert.match(read(rel), /<script type="module" src="chrome\.js">/, rel);
+  }
 });
 
 test('generated addresses match the deployment manifest exactly', () => {
@@ -50,7 +69,7 @@ test('every selector the app uses is actually generated', () => {
   // Catches the failure where a rename leaves `SELECTORS['foo()']` undefined
   // and the call becomes `undefined + args`, which the RPC answers with 0x.
   for (const m of APP.matchAll(/SELECTORS\['([^']+)'\]/g)) {
-    assert.ok(m[1] in data.SELECTORS, `app.js uses an ungenerated selector: ${m[1]}`);
+    assert.ok(m[1] in data.SELECTORS, `a page module uses an ungenerated selector: ${m[1]}`);
   }
 });
 
@@ -63,9 +82,17 @@ test('job and verdict state names cover the on-chain enums', () => {
   assert.deepEqual(data.VERDICT_STATUSES, ['None', 'Posted', 'Challenged', 'Final']);
 });
 
-test('the page states the backstop limitation rather than hiding it', () => {
-  // A dashboard that omits this reads as a working trustless system.
-  assert.match(HTML, /backstop is not active/i);
-  assert.match(HTML, /resolves by timeout/i);
-  assert.match(HTML, /Unaudited/i);
+test('the landing page states the backstop limitation rather than hiding it', () => {
+  // A site that omits this reads as a working trustless system. Asserted on the
+  // landing page specifically, because that is the one a reader arrives at.
+  const landing = read('index.html');
+  assert.match(landing, /backstop is not active/i);
+  assert.match(landing, /resolves by timeout/i);
+  assert.match(landing, /Unaudited/i);
+});
+
+test('the mechanism page carries the limitation in full', () => {
+  const how = read('how-it-works.html');
+  assert.match(how, /backstop is not active/i);
+  assert.match(how, /timeoutChallenge/);
 });

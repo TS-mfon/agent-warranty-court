@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor · Agent Warranty Court</title>
+<meta name="description" content="Live protocol state for the Agent Warranty Court, read directly from Base Sepolia in your browser. Escrow solvency, premium and stake parameters, and dispute windows.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>⚖</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main id="main">
+  <section class="band tight">
+    <div class="wrap">
+      <p class="eyebrow mint">Live</p>
+      <h1 class="h">Protocol state</h1>
+      <p class="lede">
+        Read directly from Base Sepolia in your browser on every page load. There
+        is no server and no cache in front of these numbers — a dashboard that
+        serves figures from somewhere other than the chain can show confident
+        values for a deployment that no longer exists.
+      </p>
+      <p class="status busy" id="net" role="status">
+        <span class="dot" aria-hidden="true"></span><span id="net-text">connecting to Base Sepolia…</span>
+      </p>
+    </div>
+  </section>
+
+  <section class="band tight">
+    <div class="wrap">
+      <h2 class="h">Escrow</h2>
+      <p class="lede small">
+        The escrow holds exactly what it accounts for. That equality is an
+        invariant the test suite proves on chain; shown here it is a live
+        solvency check.
+      </p>
+      <div class="stat-grid reveal">
+        <div class="stat">
+          <span class="label">Escrow held</span>
+          <span class="value loading" id="s-escrowed">—</span>
+          <span class="foot">totalEscrowed()</span>
+        </div>
+        <div class="stat">
+          <span class="label">USDC at escrow</span>
+          <span class="value loading" id="s-usdc">—</span>
+          <span class="foot">balanceOf(escrow)</span>
+        </div>
+        <div class="stat">
+          <span class="label">Solvency</span>
+          <span class="value loading" id="s-solvent">—</span>
+          <span class="foot">held == accounted</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band tight">
+    <div class="wrap">
+      <h2 class="h">Parameters</h2>
+      <p class="lede small">Immutable on the live deployment. Read from the contracts, not from a config file.</p>
+      <div class="stat-grid reveal">
+        <div class="stat">
+          <span class="label">Warranty premium</span>
+          <span class="value loading" id="s-premium">—</span>
+          <span class="foot">skimmed at funding</span>
+        </div>
+        <div class="stat">
+          <span class="label">Required stake</span>
+          <span class="value loading" id="s-stake">—</span>
+          <span class="foot">of escrowed value</span>
+        </div>
+        <div class="stat">
+          <span class="label">Challenge window</span>
+          <span class="value loading" id="s-window">—</span>
+          <span class="foot">to dispute a posted verdict</span>
+        </div>
+        <div class="stat">
+          <span class="label">Canonical timeout</span>
+          <span class="value loading" id="s-timeout">—</span>
+          <span class="foot">then the posted verdict stands</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band tight">
+    <div class="wrap">
+      <h2 class="h">Deployment</h2>
+      <div class="table-scroll reveal">
+        <table>
+          <caption class="small faint">Every address is read from the deployment manifest, never hardcoded in this page.</caption>
+          <thead><tr><th scope="col">Contract</th><th scope="col">Chain</th><th scope="col">Address</th></tr></thead>
+          <tbody id="addresses"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="chrome.js"></script>
+<script type="module" src="monitor.js"></script>
+</body>
+</html>

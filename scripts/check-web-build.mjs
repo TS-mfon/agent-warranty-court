@@ -34,12 +34,21 @@ if (before !== null && after !== null && withoutTimestamp(before) !== withoutTim
   problems.push('web/generated/data.js is stale: rebuilding it changed the content');
 }
 
-for (const file of ['web/index.html', 'web/app.js', 'web/styles.css', 'web/generated/data.js']) {
+// The five pages and every module they load. `app.js` was retired when the
+// site became multi-page; its chain reads now live in `chain.js`.
+const SHIPPED = [
+  'web/index.html', 'web/monitor.html', 'web/how-it-works.html',
+  'web/inspect.html', 'web/docs.html',
+  'web/chrome.js', 'web/chain.js', 'web/monitor.js', 'web/inspect.js', 'web/docs.js',
+  'web/styles.css', 'web/generated/data.js',
+];
+
+for (const file of SHIPPED) {
   if (!existsSync(join(ROOT, file))) problems.push(`${file} is missing`);
 }
 
 // Nothing the browser loads may carry an address literal.
-for (const file of ['web/index.html', 'web/app.js']) {
+for (const file of SHIPPED.filter((f) => /\.(html|js)$/.test(f) && !f.includes('generated/'))) {
   const path = join(ROOT, file);
   if (!existsSync(path)) continue;
   const hits = readFileSync(path, 'utf8').match(/0x[0-9a-fA-F]{40}\b/g);

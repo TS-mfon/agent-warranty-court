@@ -19,48 +19,77 @@ async function get(path = '') {
   return { url, status: res.status, type: res.headers.get('content-type') ?? '', headers: res.headers, body: await res.text() };
 }
 
-let page;
-try {
-  page = await get('');
-} catch (e) {
-  console.error('vercel FAILED');
-  console.error(`  - ${URL_UNDER_TEST} unreachable: ${e.message}`);
-  process.exit(1);
-}
-
-if (page.status !== 200) problems.push(`GET / returned ${page.status}`);
-
-// A protection wall is the failure most likely to masquerade as success.
-if (/Authentication Required|vercel\.com\/sso|_vercel_sso_nonce/i.test(page.body)) {
-  problems.push('the deployment is behind Vercel authentication, so it is not publicly reachable');
-}
-
-// Content assertions: this specific app, not a placeholder or someone else's.
-const required = [
-  ['the app title', /Agent Warranty Court/],
-  ['the live-state section', /Live protocol state/i],
-  ['the case lookup', /Look up a case/i],
-  ['the verdict grammar table', /verdict grammar/i],
-  ['the backstop limitation', /backstop is not active/i],
-  ['the timeout consequence', /resolves by timeout/i],
-  ['the unaudited warning', /Unaudited/i],
+// Content assertions, per route. Written per route and not against one page
+// because the site is five pages: asserting everything about `/` was how this
+// gate went stale when the lookup moved to its own URL, and a check that only
+// ever looks at the landing page cannot notice that `/monitor` 404s.
+const ROUTE_CONTENT = [
+  ['/', [['the app title', /Agent Warranty Court/], ['the core claim', /cannot read an SLA/i],
+         ['the backstop limitation', /backstop is not active/i], ['the timeout consequence', /resolves by timeout/i],
+         ['the unaudited warning', /Unaudited/i]]],
+  ['/how-it-works', [['the lifecycle', /Seven steps/i], ['the threat model', /malicious relayer/i],
+                     ['the limitation in full', /timeoutChallenge/]]],
+  ['/monitor', [['the live heading', /Protocol state/i], ['the solvency row', /Solvency/i]]],
+  ['/inspect', [['the case lookup', /Look up a job or a case/i]]],
+  ['/docs', [['the docs heading', /Protocol documentation/i]]],
 ];
-for (const [what, re] of required) {
-  if (!re.test(page.body)) problems.push(`the served page is missing ${what}`);
+
+const assets = new Set();
+
+for (const [route, checks] of ROUTE_CONTENT) {
+  let res;
+  try {
+    res = await get(route);
+  } catch (e) {
+    problems.push(`${route} unreachable: ${e.message}`);
+    continue;
+  }
+  if (res.status !== 200) {
+    problems.push(`GET ${route} returned ${res.status}`);
+    continue;
+  }
+  if (/Authentication Required|vercel\.com\/sso|_vercel_sso_nonce/i.test(res.body)) {
+    problems.push(`${route} is behind Vercel authentication, so it is not publicly reachable`);
+    continue;
+  }
+  for (const [what, re] of checks) {
+    if (!re.test(res.body)) problems.push(`${route} is missing ${what}`);
+  }
+  // Navigation must reach every route from every page, or the site is smaller
+  // than it claims and nobody notices.
+  for (const [other] of ROUTE_CONTENT) {
+    if (!res.body.includes(`href="${other}"`) && !res.body.includes('chrome.js')) {
+      problems.push(`${route} does not link to ${other}`);
+    }
+  }
+  for (const m of res.body.matchAll(/(?:src|href)="(?!https?:|data:|#|\/)([^"]+)"/g)) assets.add(m[1]);
 }
 
 // Every asset the page references must actually resolve, or the app renders
 // blank while the HTML still returns 200.
-const assets = [...page.body.matchAll(/(?:src|href)="(?!https?:|data:|#)([^"]+)"/g)].map((m) => m[1]);
-if (assets.length === 0) problems.push('the page references no local assets, which means it is not the real app');
+if (assets.size === 0) problems.push('no local assets were referenced, which means this is not the real app');
 
-for (const asset of new Set(assets)) {
+for (const asset of assets) {
   try {
     const res = await get(`/${asset.replace(/^\//, '')}`);
     if (res.status !== 200) problems.push(`asset ${asset} returned ${res.status}`);
   } catch (e) {
     problems.push(`asset ${asset} failed: ${e.message}`);
   }
+}
+
+// The shared chrome is what makes navigation identical across pages; if it
+// 404s every page renders without a header and still returns 200.
+try {
+  const chrome = await get('/chrome.js');
+  if (chrome.status !== 200) problems.push(`chrome.js returned ${chrome.status}`);
+  else {
+    for (const [route] of ROUTE_CONTENT) {
+      if (!chrome.body.includes(`'${route}'`)) problems.push(`served chrome.js omits route ${route}`);
+    }
+  }
+} catch (e) {
+  problems.push(`chrome.js unreachable: ${e.message}`);
 }
 
 // The generated data must carry live addresses, not placeholders.
@@ -79,7 +108,8 @@ if (!URL_UNDER_TEST.startsWith('https://')) problems.push('the deployment is not
 // Negative control: the content matcher must reject a page that is not this app.
 {
   const decoy = '<!doctype html><title>Something else</title>';
-  const missed = required.filter(([, re]) => re.test(decoy));
+  const every = ROUTE_CONTENT.flatMap(([, checks]) => checks);
+  const missed = every.filter(([, re]) => re.test(decoy));
   if (missed.length > 0) {
     problems.push(`negative control failed: ${missed.length} content checks matched an unrelated page`);
   }
@@ -92,7 +122,7 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `${URL_UNDER_TEST} serves 200 with ${new Set(assets).size} assets, ` +
-    `${required.length} content assertions, and live Base Sepolia addresses`,
+  `${URL_UNDER_TEST} serves ${ROUTE_CONTENT.length} routes and ${assets.size} assets, ` +
+    `${ROUTE_CONTENT.flatMap(([, c]) => c).length} content assertions, live Base Sepolia addresses`,
 );
 console.log('vercel verification passed');

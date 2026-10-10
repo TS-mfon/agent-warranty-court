@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it works · Agent Warranty Court</title>
+<meta name="description" content="The warranty-court lifecycle: fund, deliver, dispute, adjudicate on GenLayer, relay to Base, challenge window, settle. Why the relayer can delay but not steal, and why payouts are bucketed.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>⚖</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main id="main">
+
+  <section class="band tight">
+    <div class="wrap narrow">
+      <p class="eyebrow">Mechanism</p>
+      <h1 class="h">How a dispute becomes a settlement</h1>
+      <p class="lede">
+        Two chains, each doing only what it is good at. GenLayer reads
+        natural-language obligations and probes the live web. Base holds the
+        money and enforces every rule arithmetic can enforce. A bonded relayer
+        carries one verdict between them, and is the only participant that is
+        trusted with nothing.
+      </p>
+    </div>
+  </section>
+
+  <section class="band tight">
+    <div class="wrap">
+      <div class="diagram reveal">
+        <svg viewBox="0 0 980 470" role="img" aria-labelledby="dg-title dg-desc">
+          <title id="dg-title">Verdict path from GenLayer to Base</title>
+          <desc id="dg-desc">
+            A dispute opened on Base sends a case to GenLayer, where validators
+            independently fetch the SLA, the transcript and live ground truth and
+            reach consensus. A bonded relayer posts the finalized verdict back to
+            the Base verdict inbox, where a challenge window opens before the
+            escrow settles. The canonical backstop that would resolve a challenge
+            by proof is not deployed, so a challenge resolves by timeout instead.
+          </desc>
+
+          <rect class="d-lane d-lane-base" x="14" y="14" width="440" height="200" rx="12"/>
+          <text class="d-title d-title-base" x="34" y="44">Base Sepolia</text>
+          <text class="d-text" x="34" y="66">money, timing, and every arithmetic invariant</text>
+
+          <rect class="d-box" x="34" y="86" width="180" height="50" rx="8"/>
+          <text class="d-mono" x="48" y="108">WarrantyEscrow</text>
+          <text class="d-text" x="48" y="126">fund · deliver · dispute</text>
+
+          <rect class="d-box" x="246" y="86" width="186" height="50" rx="8"/>
+          <text class="d-mono" x="260" y="108">ProviderStake</text>
+          <text class="d-text" x="260" y="126">collateral, locked per job</text>
+
+          <rect class="d-box" x="34" y="152" width="398" height="46" rx="8"/>
+          <text class="d-mono" x="48" y="174">VerdictInbox</text>
+          <text class="d-text" x="48" y="192">bonded relay · challenge window · settle</text>
+
+          <rect class="d-lane d-lane-gl" x="526" y="14" width="440" height="200" rx="12"/>
+          <text class="d-title d-title-gl" x="546" y="44">GenLayer</text>
+          <text class="d-text" x="546" y="66">judgment: reads the SLA, probes the web</text>
+
+          <rect class="d-box" x="546" y="86" width="400" height="50" rx="8"/>
+          <text class="d-mono" x="560" y="108">warranty_court.py</text>
+          <text class="d-text" x="560" y="126">open_case · adjudicate · verdict</text>
+
+          <rect class="d-box" x="546" y="152" width="400" height="46" rx="8"/>
+          <text class="d-text" x="560" y="174">validators re-derive independently · consensus</text>
+          <text class="d-note" x="560" y="192">off-enum output fails validation, not settlement</text>
+
+          <path class="d-arrow d-arrow-hot d-flow" d="M454 112 L526 112" marker-end="url(#ah)"/>
+          <text class="d-text" x="446" y="100">case</text>
+
+          <path class="d-arrow d-arrow-hot d-flow" d="M526 176 L454 176" marker-end="url(#ah)"/>
+          <text class="d-text" x="446" y="222">verdict, via a bonded relayer</text>
+
+          <rect class="d-box d-box-warn" x="246" y="262" width="488" height="104" rx="10"/>
+          <text class="d-note" x="266" y="290">Canonical backstop — NOT DEPLOYED</text>
+          <text class="d-text" x="266" y="314">Would prove GenLayer's finalized state on Ethereum and</text>
+          <text class="d-text" x="266" y="334">forward it to Base, overturning a false verdict by proof.</text>
+          <text class="d-text" x="266" y="354">Instead a challenge resolves by timeout after 14 days.</text>
+
+          <path class="d-arrow d-arrow-warn" d="M233 175 L233 314 L246 314"/>
+          <text class="d-text" x="34" y="300">challenge</text>
+          <text class="d-text" x="34" y="320">raised</text>
+
+          <text class="d-text" x="266" y="404">Unchallenged, the window simply lapses and the escrow settles:</text>
+          <text class="d-mono" x="266" y="428">finalizeVerdict(caseId) → settle(jobId)</text>
+          <text class="d-note" x="266" y="452">the relayer's bond is returned only on a verdict that stands</text>
+
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+      <div class="diagram-key">
+        <span><i class="k-hot" aria-hidden="true"></i> the path every case takes</span>
+        <span><i class="k-warn" aria-hidden="true"></i> contested path, not deployed</span>
+        <span><i class="k-cold" aria-hidden="true"></i> contracts</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap narrow">
+      <p class="eyebrow">Lifecycle</p>
+      <h2 class="h">Seven steps, and who can trigger each</h2>
+      <ol class="timeline reveal">
+        <li>
+          <span class="who">client agent</span>
+          <h3>Fund the job</h3>
+          <p>
+            <code>fundJob</code> splits the payment: 95% into escrow, 5% skimmed
+            as the warranty premium. The provider's collateral is locked in the
+            same transaction, so a job cannot exist unwarranted. Paying through
+            the x402 endpoint captures the premium at payment time, before any
+            work begins.
+          </p>
+        </li>
+        <li>
+          <span class="who">provider agent</span>
+          <h3>Deliver, with a signed transcript</h3>
+          <p>
+            <code>submitDelivery</code> takes a digest of the execution
+            transcript and the provider's signature over it. The signature is
+            checked on Base with <code>ecrecover</code>, so a client cannot
+            fabricate evidence against an innocent provider — and high-<code>s</code>
+            signatures are rejected, or one delivery would have two valid forms.
+          </p>
+        </li>
+        <li>
+          <span class="who">client agent</span>
+          <h3>Dispute inside the acceptance window</h3>
+          <p>
+            <code>openDispute</code> freezes the provider's stake and names the
+            URLs the client says are dead. Bounded and specific: the contract
+            never scrapes links out of attacker-supplied text.
+          </p>
+        </li>
+        <li>
+          <span class="who">GenLayer validators</span>
+          <h3>Adjudicate</h3>
+          <p>
+            Each validator independently fetches the SLA and the transcript,
+            verifies both against digests committed <em>before</em> the dispute,
+            probes the disputed URLs, and re-derives a verdict. Agreement is
+            required on the violation code and the payout bucket; severity
+            tolerates ±1, but "no breach" must be unanimous.
+          </p>
+        </li>
+        <li>
+          <span class="who">any keeper</span>
+          <h3>Relay the finalized verdict</h3>
+          <p>
+            Only a verdict that is already final on GenLayer may be posted.
+            <code>postVerdict</code> takes a bond and records the GenLayer
+            transaction id, so anyone can verify the relayer's claim
+            independently.
+          </p>
+        </li>
+        <li>
+          <span class="who">anyone</span>
+          <h3>Challenge, or let the window lapse</h3>
+          <p>
+            Two hours. Challenging posts a matching bond. Unchallenged,
+            <code>finalizeVerdict</code> is permissionless, so no operator can
+            withhold settlement by going quiet.
+          </p>
+        </li>
+        <li>
+          <span class="who">anyone</span>
+          <h3>Settle</h3>
+          <p>
+            <code>settle</code> pays the bucketed share to the client, releases
+            the remainder to the provider, slashes collateral in proportion to
+            severity, and writes the breach to the reputation log. Unreadable
+            evidence takes a different path: a cure window, then release to the
+            provider, and never a slash.
+          </p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="band alt">
+    <div class="wrap narrow">
+      <p class="eyebrow">Design</p>
+      <h2 class="h">Why payouts come in five sizes</h2>
+      <p class="lede">
+        Independent validators are asked to reach the same answer without
+        coordinating. On a free integer they never will — two honest validators
+        reading the same transcript will land on 6,340 and 6,347 and the case
+        fails to settle. On a five-value set they converge reliably.
+      </p>
+      <p class="lede">
+        Base enforces the same closed set, so an off-bucket payout is
+        unsettleable even if it somehow cleared consensus. The grammar is checked
+        independently at every hop precisely so that no single component's
+        correctness is load-bearing for the whole pipeline.
+      </p>
+      <ul class="buckets" aria-label="Payout buckets in basis points">
+        <li>0<span>no breach</span></li>
+        <li>2500<span>25%</span></li>
+        <li>5000<span>50%</span></li>
+        <li>7500<span>75%</span></li>
+        <li>10000<span>full refund</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap narrow">
+      <p class="eyebrow">Threat model</p>
+      <h2 class="h">What a hostile participant can actually achieve</h2>
+      <div class="cards two reveal">
+        <div class="card flat">
+          <h3>A malicious relayer</h3>
+          <p>
+            Can delay settlement, and can post a verdict GenLayer never reached —
+            but not profit from it. Recipients are restricted to the job's two
+            parties, the payout cannot exceed what that job escrowed, and an
+            off-enum or incoherent verdict is rejected outright. Its bond is
+            returned only on a verdict that stands.
+          </p>
+        </div>
+        <div class="card flat">
+          <h3>A malicious client</h3>
+          <p>
+            Cannot forge evidence: the transcript must carry the provider's
+            signature. Cannot swap evidence mid-trial: digests are committed when
+            the case opens. Cannot dispute forever: disputes per job are capped.
+          </p>
+        </div>
+        <div class="card flat">
+          <h3>A malicious provider</h3>
+          <p>
+            Cannot rewrite its obligations after the fact — the SLA digest is
+            pinned at registration. Cannot withdraw collateral out from under a
+            live dispute. Taking its own evidence host offline does not help: an
+            unreachable host yields "no breach proven", never a slash.
+          </p>
+        </div>
+        <div class="card flat">
+          <h3>An injected transcript</h3>
+          <p>
+            Evidence is interpolated into a fixed, delimited data block with a
+            per-case delimiter the provider cannot predict. The best a fully
+            successful injection achieves is an off-enum output, which fails
+            validation. It cannot name a recipient, because no recipient is an
+            input or an output of a verdict.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band tight" id="limits">
+    <div class="wrap narrow">
+      <div class="notice">
+        <p class="tag">Known limitation</p>
+        <h2>The trustless backstop is not active</h2>
+        <p>
+          A challenged verdict should be settled by proving GenLayer's finalized
+          state on Ethereum and forwarding it to Base. Both halves are written
+          and tested; neither could be deployed.
+        </p>
+        <p>
+          <strong>The forwarder</strong> needs GenLayer's L2→L1 message-inclusion
+          verifier. GenLayer does settle to Ethereum Sepolia — 383,307 batches
+          committed, verified and executed — but neither
+          <code>proveL2MessageInclusion</code> nor
+          <code>proveL2MessageInclusionShared</code> is registered on its chain
+          diamond, and on its Bridgehub a real selector and a deliberately
+          nonexistent one revert identically. A negative control proved the
+          diamond's error is "facet not found", so the interface cannot be
+          established from outside.
+        </p>
+        <p>
+          <strong>The emitter</strong> cannot be co-located with its court. One
+          testnet has a real EVM side but refuses the court's 21.65M-gas deploy;
+          the other hosts the court but implements no ghost contracts.
+        </p>
+        <p>
+          So a challenge resolves by <code>timeoutChallenge</code> after 14 days,
+          with the posted verdict standing and the challenger forfeiting its
+          bond. That is the designed degradation and it is safe — but it means a
+          lying relayer is bonded rather than <em>provably</em> wrong. Deploying a
+          forwarder against a guessed verifier would have looked live and
+          verified nothing, which is worse.
+        </p>
+        <ul>
+          <li>Unaudited. Testnet only.</li>
+          <li><code>warrantyVault</code> is an EOA; no pooled vault contract exists.</li>
+          <li>Resolving this needs one fact from GenLayer, not a redesign here.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script type="module" src="chrome.js"></script>
+</body>
+</html>

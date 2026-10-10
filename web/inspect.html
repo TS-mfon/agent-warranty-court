@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inspect · Agent Warranty Court</title>
+<meta name="description" content="Inspect any warranty-court job or case. Reads the escrow state and the verdict status for a bytes32 id directly from Base Sepolia.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>⚖</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main id="main">
+  <section class="band tight">
+    <div class="wrap narrow">
+      <p class="eyebrow">Case inspector</p>
+      <h1 class="h">Look up a job or a case</h1>
+      <p class="lede">
+        Both ids are <code>bytes32</code>. A job id is chosen by the client when
+        it funds; a case id is derived from the job and its dispute index. Paste
+        either — this reads the escrow's state and the inbox's verdict status and
+        tells you which of the two recognises it.
+      </p>
+
+      <form class="lookup" id="lookup" novalidate>
+        <div class="field" style="flex:1 1 340px">
+          <label for="jobId">Job or case id</label>
+          <input id="jobId" name="jobId" type="text" spellcheck="false" autocomplete="off"
+                 placeholder="0x…" inputmode="text"
+                 pattern="0x[0-9a-fA-F]{64}" aria-describedby="jobId-help">
+          <span class="help" id="jobId-help">0x followed by 64 hex characters.</span>
+        </div>
+        <button class="btn primary" type="submit">Inspect</button>
+      </form>
+
+      <div class="result" id="result" hidden></div>
+
+      <div class="empty-state reveal" id="hint">
+        <h3>Nothing to show yet</h3>
+        <p>Paste an id above. If neither contract recognises it, that is reported rather than rendered as an empty job — an unknown id and a brand-new job look identical on chain otherwise.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="chrome.js"></script>
+<script type="module" src="inspect.js"></script>
+</body>
+</html>

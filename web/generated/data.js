@@ -116,4 +116,4 @@ export const VERDICT_CODES = [
 ];
 export const PAYOUT_BUCKETS = [0,2500,5000,7500,10000];
 export const SLASH_BY_SEVERITY = [{"severity":1,"bps":1000},{"severity":2,"bps":2500},{"severity":3,"bps":5000}];
-export const GENERATED_AT = "2026-10-03T11:18:25.856Z";
+export const GENERATED_AT = "2026-10-07T03:53:47.267Z";
